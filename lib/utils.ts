@@ -82,19 +82,22 @@ export const getTodayString = () => new Date().toISOString().split('T')[0];
 export const formatArticle = (
     article: RawNewsArticle,
     isCompanyNews: boolean,
-    symbol?: string,
+    symbol: string = '',
     index: number = 0
 ) => ({
     id: isCompanyNews ? Date.now() + Math.random() : article.id + index,
     headline: article.headline!.trim(),
-    summary:
-        article.summary!.trim().substring(0, isCompanyNews ? 200 : 150) + '...',
+    summary: (() => {
+        const limit = isCompanyNews ? 200 : 150;
+        const trimmed = article.summary!.trim();
+        return trimmed.length > limit ? trimmed.substring(0, limit) + '...' : trimmed;
+    })(),
     source: article.source || (isCompanyNews ? 'Company News' : 'Market News'),
     url: article.url!,
     datetime: article.datetime!,
     image: article.image || '',
     category: isCompanyNews ? 'company' : article.category || 'general',
-    related: isCompanyNews ? symbol! : article.related || '',
+    related: isCompanyNews ? symbol : article.related || '',
 });
 
 export const formatChangePercent = (changePercent?: number) => {
