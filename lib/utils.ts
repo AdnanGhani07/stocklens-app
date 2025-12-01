@@ -135,5 +135,6 @@ export const getFormattedTodayDate = () => new Date().toLocaleDateString('en-US'
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'UTC',
+    // Ensure the date is computed in IST
+    timeZone: 'Asia/Kolkata',
 });
