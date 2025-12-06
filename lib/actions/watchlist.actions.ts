@@ -3,7 +3,7 @@
 import {connectToDatabase} from '@/database/mongoose';
 import {Watchlist} from '@/database/models/watchlist.model';
 import {headers} from 'next/headers';
-import {revalidatePath, revalidateTag} from 'next/cache';
+import {revalidatePath} from 'next/cache';
 import {auth} from '@/lib/better-auth/auth';
 import {fetchJSON} from '@/lib/actions/finnhub.actions';
 
@@ -55,7 +55,6 @@ export async function addToWatchlist(symbol: string, company: string): Promise<A
         );
 
         revalidatePath('/watchlist');
-        revalidateTag('watchlist', `${userId}`);
         return {ok: true};
     } catch (e: any) {
         const msg = e?.code === 11000 ? 'Already in watchlist' : 'Failed to add to watchlist';
@@ -77,7 +76,6 @@ export async function removeFromWatchlist(symbol: string): Promise<ActionResult>
         await Watchlist.deleteOne({userId, symbol: sym});
 
         revalidatePath('/watchlist');
-        revalidateTag('watchlist', `${userId}`);
         return {ok: true};
     } catch (e) {
         console.error('removeFromWatchlist error:', e);
