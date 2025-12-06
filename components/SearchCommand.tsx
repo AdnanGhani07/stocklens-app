@@ -86,7 +86,7 @@ export default function SearchCommand({renderAs = 'button', label = 'Add Stock',
                                 {isSearchMode ? 'Search results' : 'Popular stocks'}
                                 {` `}({displayStocks?.length || 0})
                             </div>
-                            {displayStocks?.map((stock, i) => (
+                            {displayStocks?.map((stock) => (
                                 <li key={stock.symbol} className="search-item">
                                     <Link href={`/stocks/${stock.symbol}`}
                                           onClick={handleSelectStock}
