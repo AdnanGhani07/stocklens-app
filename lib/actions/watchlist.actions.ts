@@ -55,7 +55,7 @@ export async function addToWatchlist(symbol: string, company: string): Promise<A
         );
 
         revalidatePath('/watchlist');
-        revalidateTag(`watchlist:${userId}`);
+        revalidateTag('watchlist', `${userId}`);
         return {ok: true};
     } catch (e: any) {
         const msg = e?.code === 11000 ? 'Already in watchlist' : 'Failed to add to watchlist';
@@ -77,7 +77,7 @@ export async function removeFromWatchlist(symbol: string): Promise<ActionResult>
         await Watchlist.deleteOne({userId, symbol: sym});
 
         revalidatePath('/watchlist');
-        revalidateTag(`watchlist:${userId}`);
+        revalidateTag('watchlist', `${userId}`);
         return {ok: true};
     } catch (e) {
         console.error('removeFromWatchlist error:', e);
@@ -85,7 +85,10 @@ export async function removeFromWatchlist(symbol: string): Promise<ActionResult>
     }
 }
 
-export async function getUserWatchlist(): Promise<{ userId: string; items: { symbol: string; company: string; addedAt: Date }[] } | null> {
+export async function getUserWatchlist(): Promise<{
+    userId: string;
+    items: { symbol: string; company: string; addedAt: Date }[]
+} | null> {
     try {
         const session = await auth.api.getSession({headers: await headers()});
         if (!session) return null;
@@ -95,7 +98,11 @@ export async function getUserWatchlist(): Promise<{ userId: string; items: { sym
         const items = await Watchlist.find({userId}).lean();
         return {
             userId,
-            items: (items || []).map((i) => ({symbol: String(i.symbol), company: String(i.company), addedAt: i.addedAt as Date})),
+            items: (items || []).map((i) => ({
+                symbol: String(i.symbol),
+                company: String(i.company),
+                addedAt: i.addedAt as Date
+            })),
         };
     } catch (e) {
         console.error('getUserWatchlist error:', e);
