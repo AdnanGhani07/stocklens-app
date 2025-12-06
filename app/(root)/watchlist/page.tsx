@@ -17,7 +17,12 @@ export default async function WatchlistPage() {
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-semibold text-gray-100">Watchlist</h1>
-                <SearchCommand renderAs="button" label="Add Stock" initialStocks={initialStocks}/>
+                <SearchCommand
+                    renderAs="button"
+                    label="Add Stock"
+                    initialStocks={initialStocks}
+                    watchlistSymbols={initialStocks.map((s) => s.symbol)}
+                />
             </div>
 
             {isEmpty ? (
@@ -28,7 +33,12 @@ export default async function WatchlistPage() {
                         Use the search to find stocks and click the star icon to add them to your watchlist. Your
                         saved stocks will appear here.
                     </p>
-                    <SearchCommand renderAs="button" label="Add your first stock" initialStocks={initialStocks}/>
+                    <SearchCommand
+                        renderAs="button"
+                        label="Add your first stock"
+                        initialStocks={initialStocks}
+                        watchlistSymbols={initialStocks.map((s) => s.symbol)}
+                    />
                 </div>
             ) : (
                 <WatchlistTable watchlist={watchlist}/>

@@ -36,7 +36,17 @@ export default function WatchlistTable({watchlist}: WatchlistTableProps) {
                         <td className="px-4 py-3 text-gray-200">{row.company}</td>
                         <td className="px-4 py-3 text-gray-300">{row.symbol}</td>
                         <td className="px-4 py-3">{row.priceFormatted ?? "—"}</td>
-                        <td className={`px-4 py-3 ${Number(row.changePercent) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{row.changeFormatted ?? "—"}</td>
+                        <td
+                            className={`px-4 py-3 ${
+                                row.changePercent == null || !Number.isFinite(Number(row.changePercent))
+                                    ? 'text-gray-400'
+                                    : Number(row.changePercent) >= 0
+                                        ? 'text-emerald-400'
+                                        : 'text-red-400'
+                            }`}
+                        >
+                            {row.changeFormatted ?? "—"}
+                        </td>
                         <td className="px-4 py-3">{row.marketCap ?? "—"}</td>
                         <td className="px-4 py-3">{row.peRatio ?? "—"}</td>
                         <td className="px-4 py-3 text-right">

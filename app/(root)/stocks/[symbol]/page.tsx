@@ -15,8 +15,21 @@ import {getUserWatchlist} from "@/lib/actions/watchlist.actions";
 export default async function StockDetails({params}: StockDetailsPageProps) {
     const {symbol} = await params;
     const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
-    const details = await getStockDetails(symbol);
-    const userWatchlist = await getUserWatchlist();
+    // Run independent requests in parallel
+    const [details, userWatchlist] = await Promise.all([
+        getStockDetails(symbol),
+        getUserWatchlist(),
+    ]);
+    if (!details) {
+        return (
+            <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
+                <section className="w-full flex items-center justify-center text-gray-300">
+                    Unable to load stock details for {symbol.toUpperCase()}.
+                </section>
+            </div>
+        );
+    }
+    const companyName = details.company ?? symbol.toUpperCase();
     const isInWatchlist = !!userWatchlist?.items?.some((i) => i.symbol.toUpperCase() === symbol.toUpperCase());
 
     return (
@@ -50,7 +63,7 @@ export default async function StockDetails({params}: StockDetailsPageProps) {
                     <div className="flex items-center justify-between">
                         <WatchlistButton
                             symbol={symbol.toUpperCase()}
-                            company={details.company}
+                            company={companyName}
                             isInWatchlist={isInWatchlist}
                         />
                     </div>

@@ -1,5 +1,5 @@
 "use client";
-import React, {useMemo, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {toast} from "sonner";
 import {addToWatchlist, removeFromWatchlist} from "@/lib/actions/watchlist.actions";
 
@@ -23,6 +23,16 @@ const WatchlistButton = ({
     }, [added, type]);
 
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup pending debounce on unmount to prevent state updates after unmount
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+                debounceRef.current = null;
+            }
+        };
+    }, []);
 
     const handleClick = async (e?: React.MouseEvent<HTMLButtonElement>) => {
         e?.preventDefault();

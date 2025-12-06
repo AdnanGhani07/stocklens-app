@@ -169,17 +169,8 @@ declare global {
         news?: MarketNewsArticle[];
     };
 
-    type SearchCommandProps = {
-        open?: boolean;
-        setOpen?: (open: boolean) => void;
-        renderAs?: 'button' | 'text';
-        buttonLabel?: string;
-        buttonVariant?: 'primary' | 'secondary';
-        className?: string;
-        initialStocks?: StockWithWatchlistStatus[];
-        watchlistSymbols?: string[];
-        label?: string;
-    };
+    // Note: SearchCommandProps is already declared above (lines ~58-63).
+    // Remove duplicate alias to avoid "Duplicate identifier" TypeScript error.
 
     type AlertData = {
         symbol: string;
