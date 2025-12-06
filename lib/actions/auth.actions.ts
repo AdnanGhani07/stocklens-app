@@ -46,8 +46,14 @@ export const signInWithEmail = async ({
             body: {email, password},
         })
         return {success: true, data: response};
-    } catch (e) {
+    } catch (e: any) {
         console.log('Sign In Failed', e);
+        if (e.status === 'UNAUTHORIZED' || e.statusCode === 401) {
+            return {
+                success: false,
+                error: 'Account not found or incorrect password. Please sign up if you don\'t have an account.'
+            };
+        }
         return {success: false, error: 'Sign In Failed'};
     }
 }
