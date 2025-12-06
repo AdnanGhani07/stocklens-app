@@ -1,7 +1,9 @@
 import SearchCommand from "@/components/SearchCommand";
 import WatchlistTable from "@/components/WatchlistTable";
-import {getUserWatchlist, getWatchlistWithData} from "@/lib/actions/watchlist.actions";
+import {getWatchlistWithData} from "@/lib/actions/watchlist.actions";
 import {searchStocks} from "@/lib/actions/finnhub.actions";
+
+export const dynamic = 'force-dynamic';
 
 export default async function WatchlistPage() {
     const watchlist = await getWatchlistWithData();
@@ -24,7 +26,8 @@ export default async function WatchlistPage() {
             </div>
 
             {isEmpty ? (
-                <div className="flex flex-col items-center justify-center gap-4 py-16 text-center border border-dashed border-gray-700 rounded-lg">
+                <div
+                    className="flex flex-col items-center justify-center gap-4 py-16 text-center border border-dashed border-gray-700 rounded-lg">
                     <div className="text-5xl">⭐</div>
                     <h2 className="text-xl font-medium text-gray-200">Your watchlist is empty</h2>
                     <p className="text-gray-400 max-w-md">
