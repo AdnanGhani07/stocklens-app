@@ -1,6 +1,8 @@
 'use server';
 
 import {formatArticle, getDateRange, validateArticle} from '@/lib/utils';
+import {cache} from "react";
+import {POPULAR_STOCK_SYMBOLS} from "@/lib/constants";
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 const NEXT_PUBLIC_FINNHUB_API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
@@ -93,3 +95,89 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
         throw new Error('Failed to fetch news');
     }
 }
+
+export const searchStocks = cache(async (query?: string): Promise<StockWithWatchlistStatus[]> => {
+    try {
+        const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+        if (!token) {
+            // If no token, log and return empty to avoid throwing per requirements
+            console.error('Error in stock search:', new Error('FINNHUB API key is not configured'));
+            return [];
+        }
+
+        const trimmed = typeof query === 'string' ? query.trim() : '';
+
+        // If no query, return popular stocks based on profile2
+        if (!trimmed) {
+            const top = POPULAR_STOCK_SYMBOLS.slice(0, 10);
+            const profiles = await Promise.all(
+                top.map(async (sym) => {
+                    try {
+                        const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`;
+                        // Revalidate every hour
+                        const profile = await fetchJSON<any>(url, 3600);
+                        return {sym, profile} as { sym: string; profile: any };
+                    } catch (e) {
+                        console.error('Error fetching profile2 for', sym, e);
+                        return {sym, profile: null} as { sym: string; profile: any };
+                    }
+                })
+            );
+
+            const mappedTop: StockWithWatchlistStatus[] = profiles
+                .filter((p) => Boolean(p.profile))
+                .map(({sym, profile}) => {
+                    const upper = sym.toUpperCase();
+                    const name = (profile?.name as string | undefined) || upper;
+                    const exchange = (profile?.exchange as string | undefined) || 'US';
+                    const type = 'Stock';
+                    return {
+                        symbol: upper,
+                        name,
+                        exchange,
+                        type,
+                        isInWatchlist: false,
+                    } as StockWithWatchlistStatus;
+                });
+
+            return mappedTop.slice(0, 15);
+        }
+
+        // With a query, use Finnhub search endpoint
+        const searchUrl = `${FINNHUB_BASE_URL}/search?q=${encodeURIComponent(trimmed)}&token=${token}`;
+        const searchData = await fetchJSON<{ result?: FinnhubSearchResult[] }>(searchUrl, 60);
+        const results: FinnhubSearchResult[] = (searchData?.result || [])
+            // Basic filtering: keep items with a symbol and exclude synthetic/crypto types if needed
+            .filter((r) => Boolean(r?.symbol))
+            .slice(0, 50);
+
+        const mapped: StockWithWatchlistStatus[] = results
+            .map((r) => {
+                const upper = (r.symbol || '').toUpperCase();
+                const name = (r.description as string | undefined) || upper;
+                const display = (r.displaySymbol as string | undefined) || undefined;
+                const exchangeFromProfile = (r as any).__exchange as string | undefined;
+                // Prefer explicit exchange from profile; fall back to a parsed prefix from displaySymbol (e.g. "NASDAQ:AAPL"),
+                // then default to "US" when nothing better is available.
+                const exchange =
+                    exchangeFromProfile ||
+                    (display && display.includes(':') ? display.split(':')[0] : undefined) ||
+                    'US';
+                const type = (r.type as string | undefined) || 'Stock';
+                const item: StockWithWatchlistStatus = {
+                    symbol: upper,
+                    name,
+                    exchange,
+                    type,
+                    isInWatchlist: false,
+                };
+                return item;
+            })
+            .slice(0, 15);
+
+        return mapped;
+    } catch (err) {
+        console.error('Error in stock search:', err);
+        return [];
+    }
+});
