@@ -96,7 +96,7 @@ export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> 
     }
 }
 
-export const searchStocks = cache(async (query?: string): Promise<StockWithWatchlistStatus[]> => {
+export const searchStocks = cache(async (query?: string, watchlistSymbols?: string[]): Promise<StockWithWatchlistStatus[]> => {
     try {
         const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
         if (!token) {
@@ -106,6 +106,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
         }
 
         const trimmed = typeof query === 'string' ? query.trim() : '';
+        const watchSet = new Set((watchlistSymbols || []).map((s) => s?.toUpperCase().trim()).filter(Boolean) as string[]);
 
         // If no query, return popular stocks based on profile2
         if (!trimmed) {
@@ -136,7 +137,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                         name,
                         exchange,
                         type,
-                        isInWatchlist: false,
+                        isInWatchlist: watchSet.has(upper),
                     } as StockWithWatchlistStatus;
                 });
 
@@ -169,7 +170,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                     name,
                     exchange,
                     type,
-                    isInWatchlist: false,
+                    isInWatchlist: watchSet.has(upper),
                 };
                 return item;
             })
@@ -181,3 +182,43 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
         return [];
     }
 });
+
+export async function getStockDetails(symbol: string) {
+    const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+    if (!token) throw new Error('FINNHUB API key is not configured');
+
+    const sym = (symbol || '').toUpperCase().trim();
+    if (!sym) throw new Error('Symbol is required');
+
+    try {
+        const [quote, profile, metrics] = await Promise.all([
+            fetchJSON<QuoteData>(`${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(sym)}&token=${token}`, 60),
+            fetchJSON<ProfileData>(`${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`, 3600),
+            fetchJSON<FinancialsData>(`${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(sym)}&metric=all&token=${token}`, 3600),
+        ]);
+
+        const peRaw = metrics?.metric ? (metrics.metric["peExclExtraTTM"] ?? metrics.metric["peTTM"] ?? metrics.metric["trailingPE"] ?? undefined) : undefined;
+
+        return {
+            symbol: sym,
+            company: (profile?.name as string | undefined) || sym,
+            price: quote?.c ?? undefined,
+            changePercent: quote?.dp ?? undefined,
+            marketCap: profile?.marketCapitalization ?? undefined,
+            peRatio: typeof peRaw === 'number' ? peRaw : undefined,
+        } as {
+            symbol: string;
+            company: string;
+            price?: number;
+            changePercent?: number;
+            marketCap?: number;
+            peRatio?: number;
+        };
+    } catch (e) {
+        console.error('getStockDetails error:', sym, e);
+        return {
+            symbol: sym,
+            company: sym,
+        };
+    }
+}

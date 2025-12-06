@@ -59,6 +59,7 @@ declare global {
         renderAs?: 'button' | 'text';
         label?: string;
         initialStocks: StockWithWatchlistStatus[];
+        watchlistSymbols?: string[];
     };
 
     type WelcomeEmailData = {
@@ -175,6 +176,9 @@ declare global {
         buttonLabel?: string;
         buttonVariant?: 'primary' | 'secondary';
         className?: string;
+        initialStocks?: StockWithWatchlistStatus[];
+        watchlistSymbols?: string[];
+        label?: string;
     };
 
     type AlertData = {

@@ -3,16 +3,18 @@
 import {useEffect, useState} from "react"
 import {CommandDialog, CommandEmpty, CommandInput, CommandList} from "@/components/ui/command"
 import {Button} from "@/components/ui/button";
-import {Loader2, Star, TrendingUp} from "lucide-react";
+import {Loader2, TrendingUp} from "lucide-react";
 import Link from "next/link";
 import {searchStocks} from "@/lib/actions/finnhub.actions";
 import {useDebounce} from "@/hooks/UseDebounce";
+import WatchlistButton from "@/components/WatchlistButton";
 
-export default function SearchCommand({renderAs = 'button', label = 'Add Stock', initialStocks}: SearchCommandProps) {
+export default function SearchCommand({renderAs = 'button', label = 'Add Stock', initialStocks, watchlistSymbols = []}: SearchCommandProps) {
     const [open, setOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const [loading, setLoading] = useState(false)
     const [stocks, setStocks] = useState<StockWithWatchlistStatus[]>(initialStocks)
+    const [watchSet, setWatchSet] = useState<Set<string>>(new Set((watchlistSymbols || []).map(s => s.toUpperCase())));
 
     const isSearchMode = !!searchTerm.trim();
     const displayStocks = isSearchMode ? stocks : stocks?.slice(0, 10)
@@ -33,7 +35,7 @@ export default function SearchCommand({renderAs = 'button', label = 'Add Stock',
 
         setLoading(true)
         try {
-            const results = await searchStocks(searchTerm.trim());
+            const results = await searchStocks(searchTerm.trim(), Array.from(watchSet));
             setStocks(results);
         } catch {
             setStocks([]);
@@ -99,7 +101,25 @@ export default function SearchCommand({renderAs = 'button', label = 'Add Stock',
                                                 {stock.symbol} | {stock.exchange} | {stock.type}
                                             </div>
                                         </div>
-                                        <Star/>
+                                        <WatchlistButton
+                                            type="icon"
+                                            symbol={stock.symbol}
+                                            company={stock.name}
+                                            isInWatchlist={!!stock.isInWatchlist}
+                                            onWatchlistChange={(sym, isAdded) => {
+                                                const upper = sym.toUpperCase();
+                                                setStocks((prev) =>
+                                                    (prev || []).map((s) =>
+                                                        s.symbol === upper ? {...s, isInWatchlist: isAdded} : s
+                                                    )
+                                                );
+                                                setWatchSet(prev => {
+                                                    const next = new Set(prev);
+                                                    if (isAdded) next.add(upper); else next.delete(upper);
+                                                    return next;
+                                                })
+                                            }}
+                                        />
                                     </Link>
                                 </li>
                             ))}
