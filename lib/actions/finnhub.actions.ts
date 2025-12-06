@@ -107,10 +107,8 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
 
         const trimmed = typeof query === 'string' ? query.trim() : '';
 
-        let results: FinnhubSearchResult[] = [];
-
+        // If no query, return popular stocks based on profile2
         if (!trimmed) {
-            // Fetch top 10 popular symbols' profiles
             const top = POPULAR_STOCK_SYMBOLS.slice(0, 10);
             const profiles = await Promise.all(
                 top.map(async (sym) => {
@@ -126,10 +124,37 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                 })
             );
 
+            const mappedTop: StockWithWatchlistStatus[] = profiles
+                .filter((p) => Boolean(p.profile))
+                .map(({sym, profile}) => {
+                    const upper = sym.toUpperCase();
+                    const name = (profile?.name as string | undefined) || upper;
+                    const exchange = (profile?.exchange as string | undefined) || 'US';
+                    const type = 'Stock';
+                    return {
+                        symbol: upper,
+                        name,
+                        exchange,
+                        type,
+                        isInWatchlist: false,
+                    } as StockWithWatchlistStatus;
+                });
+
+            return mappedTop.slice(0, 15);
+        }
+
+        // With a query, use Finnhub search endpoint
+        const searchUrl = `${FINNHUB_BASE_URL}/search?q=${encodeURIComponent(trimmed)}&token=${token}`;
+        const searchData = await fetchJSON<{ result?: FinnhubSearchResult[] }>(searchUrl, 60);
+        const results: FinnhubSearchResult[] = (searchData?.result || [])
+            // Basic filtering: keep items with a symbol and exclude synthetic/crypto types if needed
+            .filter((r) => Boolean(r?.symbol))
+            .slice(0, 50);
+
         const mapped: StockWithWatchlistStatus[] = results
             .map((r) => {
                 const upper = (r.symbol || '').toUpperCase();
-                const name = r.description || upper;
+                const name = (r.description as string | undefined) || upper;
                 const display = (r.displaySymbol as string | undefined) || undefined;
                 const exchangeFromProfile = (r as any).__exchange as string | undefined;
                 // Prefer explicit exchange from profile; fall back to a parsed prefix from displaySymbol (e.g. "NASDAQ:AAPL"),
@@ -138,7 +163,7 @@ export const searchStocks = cache(async (query?: string): Promise<StockWithWatch
                     exchangeFromProfile ||
                     (display && display.includes(':') ? display.split(':')[0] : undefined) ||
                     'US';
-                const type = r.type || 'Stock';
+                const type = (r.type as string | undefined) || 'Stock';
                 const item: StockWithWatchlistStatus = {
                     symbol: upper,
                     name,
