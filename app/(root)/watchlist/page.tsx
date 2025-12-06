@@ -6,9 +6,7 @@ import {searchStocks} from "@/lib/actions/finnhub.actions";
 export default async function WatchlistPage() {
     const watchlist = await getWatchlistWithData();
 
-    // Prepare initial stocks for the add button/search dialog, with current watchlist awareness
-    const userWatchlist = await getUserWatchlist();
-    const symbols = userWatchlist?.items?.map((i) => i.symbol) || [];
+    const symbols = watchlist?.map((item) => item.symbol) || [];
     const initialStocks = await searchStocks(undefined, symbols);
 
     const isEmpty = !watchlist || watchlist.length === 0;

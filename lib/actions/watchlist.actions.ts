@@ -114,6 +114,16 @@ export async function getWatchlistWithData(): Promise<StockWithData[]> {
         if (!items || items.length === 0) return [];
 
         const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+        if (!token) {
+            console.error('getWatchlistWithData: FINNHUB API key not configured');
+            // Return items without enrichment
+            return items.map((i) => ({
+                userId,
+                symbol: String(i.symbol).toUpperCase(),
+                company: String(i.company),
+                addedAt: i.addedAt as Date,
+            } as StockWithData));
+        }
         const result: StockWithData[] = await Promise.all(
             items.map(async (i) => {
                 const sym = String(i.symbol).toUpperCase();
