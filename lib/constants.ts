@@ -1,7 +1,7 @@
 export const NAV_ITEMS = [
     {href: '/', label: 'Dashboard'},
     {href: '/search', label: 'Search'},
-    // { href: '/watchlist', label: 'Watchlist' },
+    {href: '/watchlist', label: 'Watchlist'},
 ];
 
 // Sign-up form select options
@@ -260,6 +260,16 @@ export const COMPANY_FINANCIALS_WIDGET_CONFIG = (symbol: string) => ({
     height: 464,
     displayMode: 'regular',
     largeChartUrl: '',
+});
+
+// Symbol Profile widget (company overview panel)
+export const SYMBOL_PROFILE_WIDGET_CONFIG = (symbol: string) => ({
+    symbol: symbol.toUpperCase(),
+    colorTheme: 'dark',
+    isTransparent: 'true',
+    locale: 'en',
+    width: '100%',
+    height: 420,
 });
 
 export const POPULAR_STOCK_SYMBOLS = [
