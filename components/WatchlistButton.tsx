@@ -1,5 +1,7 @@
 "use client";
-import React, {useMemo, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
+import {toast} from "sonner";
+import {addToWatchlist, removeFromWatchlist} from "@/lib/actions/watchlist.actions";
 
 // Minimal WatchlistButton implementation to satisfy page requirements.
 // This component focuses on UI contract only. It toggles the local state and
@@ -20,17 +22,54 @@ const WatchlistButton = ({
         return added ? "Remove from Watchlist" : "Add to Watchlist";
     }, [added, type]);
 
-    const handleClick = () => {
+    const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup pending debounce on unmount to prevent state updates after unmount
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+                debounceRef.current = null;
+            }
+        };
+    }, []);
+
+    const handleClick = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+        e?.preventDefault();
+        e?.stopPropagation();
+
         const next = !added;
-        setAdded(next);
+        setAdded(next); // optimistic
         onWatchlistChange?.(symbol, next);
+
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(async () => {
+            try {
+                if (next) {
+                    const res = await addToWatchlist(symbol, company);
+                    if (!res.ok) throw new Error(res.error);
+                    toast.success(`${symbol} added to watchlist`);
+                } else {
+                    const res = await removeFromWatchlist(symbol);
+                    if (!res.ok) throw new Error(res.error);
+                    toast.success(`${symbol} removed from watchlist`);
+                }
+            } catch (err: any) {
+                // revert on error
+                setAdded(!next);
+                onWatchlistChange?.(symbol, !next);
+                toast.error(err?.message || 'Action failed');
+            }
+        }, 300);
     };
 
     if (type === "icon") {
         return (
             <button
+                type="button"
                 title={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
                 aria-label={added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
+                aria-pressed={added}
                 className={`watchlist-icon-btn ${added ? "watchlist-icon-added" : ""}`}
                 onClick={handleClick}
             >
@@ -53,21 +92,24 @@ const WatchlistButton = ({
     }
 
     return (
-        <button className={`watchlist-btn ${added ? "watchlist-remove" : ""}`} onClick={handleClick}>
-            {showTrashIcon && added ? (
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-5 h-5 mr-2"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                          d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-6v6"/>
-                </svg>
-            ) : null}
-            <span>{label}</span>
+        <button type="button" className={`watchlist-btn ${added ? "watchlist-remove" : ""}`} onClick={handleClick}>
+            <span className="flex w-full items-center justify-center gap-2">
+                {showTrashIcon && added ? (
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                        aria-hidden="true"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round"
+                              d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-6v6"/>
+                    </svg>
+                ) : null}
+                <span className="whitespace-nowrap">{label}</span>
+            </span>
         </button>
     );
 };

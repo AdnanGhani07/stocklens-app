@@ -9,10 +9,28 @@ import {
     SYMBOL_PROFILE_WIDGET_CONFIG,
     TECHNICAL_ANALYSIS_WIDGET_CONFIG,
 } from "@/lib/constants";
+import {getStockDetails} from "@/lib/actions/finnhub.actions";
+import {getUserWatchlist} from "@/lib/actions/watchlist.actions";
 
 export default async function StockDetails({params}: StockDetailsPageProps) {
     const {symbol} = await params;
     const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
+    // Run independent requests in parallel
+    const [details, userWatchlist] = await Promise.all([
+        getStockDetails(symbol),
+        getUserWatchlist(),
+    ]);
+    if (!details) {
+        return (
+            <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
+                <section className="w-full flex items-center justify-center text-gray-300">
+                    Unable to load stock details for {symbol.toUpperCase()}.
+                </section>
+            </div>
+        );
+    }
+    const companyName = details.company ?? symbol.toUpperCase();
+    const isInWatchlist = !!userWatchlist?.items?.some((i) => i.symbol.toUpperCase() === symbol.toUpperCase());
 
     return (
         <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
@@ -43,8 +61,11 @@ export default async function StockDetails({params}: StockDetailsPageProps) {
                 {/* Right column */}
                 <div className="flex flex-col gap-6">
                     <div className="flex items-center justify-between">
-                        <WatchlistButton symbol={symbol.toUpperCase()} company={symbol.toUpperCase()}
-                                         isInWatchlist={false}/>
+                        <WatchlistButton
+                            symbol={symbol.toUpperCase()}
+                            company={companyName}
+                            isInWatchlist={isInWatchlist}
+                        />
                     </div>
 
                     <TradingViewWidget
