@@ -26,7 +26,16 @@ const SignIn = () => {
         try {
             // console.log(data);
             const result = await signInWithEmail(data);
-            if (result.success) router.push('/');
+            if (result.success) {
+                toast.success('Welcome back!');
+                router.push('/');
+            } else {
+                // Show specific error from server
+                toast.error('Sign in failed', {
+                    description: result.error || 'Invalid credentials',
+                    duration: 5000,
+                });
+            }
         } catch (e) {
             console.error(e);
             toast.error('Sign in failed', {
@@ -47,7 +56,13 @@ const SignIn = () => {
                     type="email"
                     register={register}
                     error={errors.email}
-                    validation={{required: 'Email is required'}}
+                    validation={{
+                        required: 'Email is required',
+                        pattern: {
+                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                            message: 'Please enter a valid email address'
+                        }
+                    }}
                 />
 
                 <InputField
@@ -57,7 +72,11 @@ const SignIn = () => {
                     type="password"
                     register={register}
                     error={errors.password}
-                    validation={{required: 'Password is required', minLength: 8}}
+                    validation={{
+                        required: 'Password is required',
+                        minLength: {value: 8, message: 'Password must be at least 8 characters'}
+                    }}
+                    withPasswordToggle
                 />
 
                 <Button type="submit" disabled={isSubmitting} className="yellow-btn w-full mt-5">

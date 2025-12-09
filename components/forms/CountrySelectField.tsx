@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import {useState} from 'react';
-import {Control, Controller, FieldError} from 'react-hook-form';
+import {Controller} from 'react-hook-form';
 import {Popover, PopoverContent, PopoverTrigger,} from '@/components/ui/popover';
 import {Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,} from '@/components/ui/command';
 import {Button} from '@/components/ui/button';
@@ -11,15 +10,6 @@ import {Check, ChevronsUpDown} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import countryList from 'react-select-country-list';
 import * as flags from 'country-flag-icons/react/3x2';
-
-type CountrySelectProps = {
-    name: string;
-    label: string;
-    control: Control<any>;
-    error?: FieldError;
-    required?: boolean;
-};
-
 
 const CountrySelect = ({
                            value,

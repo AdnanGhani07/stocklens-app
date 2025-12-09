@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
     type SignInFormData = {
         email: string;
@@ -17,7 +18,7 @@ declare global {
     type CountrySelectProps = {
         name: string;
         label: string;
-        control: Control;
+        control: Control<any>;
         error?: FieldError;
         required?: boolean;
     };
